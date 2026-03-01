@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenClaw · Agent 框架课程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0d1117; --paper: #f5f0e8; --cream: #ede8dc;
+    --accent: #c0392b; --accent2: #1a3a5c; --gold: #b5922a;
+    --muted: #6b6560; --border: #ccc6bb;
+    --user-bubble: #1a3a5c; --ai-bubble: #f0ece3;
+    --link-color: #1a5fa3;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.75; }
+
+  /* Header */
+  header { background: var(--accent2); color: #fff; padding: 2.5rem 2rem 2rem; position: relative; overflow: hidden; }
+  header::before { content:''; position:absolute; top:-60px; right:-80px; width:320px; height:320px; border-radius:50%; background:rgba(255,255,255,0.04); }
+  header::after { content:''; position:absolute; bottom:-40px; left:10%; width:200px; height:200px; border-radius:50%; background:rgba(192,57,43,0.15); }
+  .header-inner { max-width:860px; margin:0 auto; position:relative; z-index:1; }
+  .instructor { font-family:'Noto Serif SC',serif; font-size:.9rem; color:rgba(255,255,255,.7); letter-spacing:.08em; margin-bottom:.6rem; display:flex; align-items:center; gap:.6rem; }
+  .instructor::before { content:''; display:inline-block; width:28px; height:2px; background:var(--gold); }
+  h1 { font-family:'Noto Serif SC',serif; font-size:clamp(1.8rem,4vw,2.8rem); font-weight:700; letter-spacing:.02em; line-height:1.2; }
+  h1 span { color:var(--gold); }
+  .subtitle { margin-top:.6rem; font-size:.95rem; color:rgba(255,255,255,.6); font-weight:300; }
+  .tag-bar { margin-top:1.2rem; display:flex; flex-wrap:wrap; gap:.5rem; }
+  .tag { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:2px; padding:.2rem .7rem; font-size:.78rem; letter-spacing:.05em; font-family:'JetBrains Mono',monospace; }
+
+  /* Nav */
+  .nav-tabs { background:var(--cream); border-bottom:2px solid var(--border); position:sticky; top:0; z-index:100; }
+  .nav-tabs-inner { max-width:1200px; margin:0 auto; padding:0 1.5rem; display:flex; overflow-x:auto; }
+  .nav-tab { padding:.7rem 1.2rem; font-size:.85rem; font-weight:500; cursor:pointer; border:none; background:none; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color .15s, border-color .15s; font-family:'Noto Sans SC',sans-serif; }
+  .nav-tab:hover { color:var(--ink); }
+  .nav-tab.active { color:var(--accent2); border-bottom-color:var(--accent2); font-weight:600; }
+
+  /* Layout */
+  .main-grid { max-width:1200px; margin:0 auto; padding:2.5rem 1.5rem; display:grid; grid-template-columns:1fr 380px; gap:2.5rem; align-items:start; }
+  @media (max-width:900px) { .main-grid { grid-template-columns:1fr; } .sticky-chat { position:static !important; } }
+
+  .content-section { display:none; }
+  .content-section.active { display:block; }
+
+  /* Section header */
+  .section-header { font-family:'Noto Serif SC',serif; font-size:1.05rem; font-weight:600; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:1.5rem; padding-bottom:.5rem; border-bottom:2px solid var(--border); }
+
+  /* Lecture cards */
+  .lecture-card { background:var(--cream); border:1px solid var(--border); border-left:4px solid var(--accent2); border-radius:2px; margin-bottom:1.2rem; overflow:hidden; transition:box-shadow .2s; }
+  .lecture-card:hover { box-shadow:0 4px 18px rgba(0,0,0,.08); }
+  .lecture-card.highlight { border-left-color:var(--accent); }
+  .lecture-card.gold { border-left-color:var(--gold); }
+  .lecture-head { padding:1rem 1.2rem .8rem; display:flex; align-items:flex-start; gap:1rem; }
+  .lec-num { font-family:'JetBrains Mono',monospace; font-size:.72rem; font-weight:600; color:var(--accent2); background:rgba(26,58,92,.08); padding:.2rem .5rem; border-radius:2px; white-space:nowrap; margin-top:.15rem; flex-shrink:0; }
+  .lecture-card.highlight .lec-num { color:var(--accent); background:rgba(192,57,43,.08); }
+  .lecture-card.gold .lec-num { color:var(--gold); background:rgba(181,146,42,.1); }
+  .lec-title { font-family:'Noto Serif SC',serif; font-size:1rem; font-weight:600; line-height:1.4; }
+  .lec-badge { font-size:.72rem; color:var(--muted); font-style:italic; margin-top:.15rem; font-weight:300; }
+  .lecture-body { padding:0 1.2rem 1rem 3.4rem; font-size:.88rem; color:#3a3530; }
+  .lecture-body h4 { font-size:.78rem; font-weight:600; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin:.7rem 0 .3rem; font-family:'JetBrains Mono',monospace; }
+  .lecture-body ul { padding-left:1.1rem; }
+  .lecture-body ul li { margin-bottom:.2rem; }
+  .lecture-body p { margin-bottom:.4rem; }
+
+  /* Concept cards */
+  .concept-card { background:#fff; border:1px solid var(--border); border-radius:3px; margin-bottom:1.4rem; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .concept-header { padding:1rem 1.3rem; display:flex; align-items:center; gap:.8rem; cursor:pointer; user-select:none; }
+  .concept-icon { width:38px; height:38px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+  .concept-title { font-family:'Noto Serif SC',serif; font-size:1rem; font-weight:600; }
+  .concept-abbr { font-family:'JetBrains Mono',monospace; font-size:.72rem; padding:.15rem .45rem; border-radius:2px; margin-left:.4rem; font-weight:600; }
+  .concept-toggle { margin-left:auto; color:var(--muted); font-size:.85rem; transition:transform .25s; flex-shrink:0; }
+  .concept-card.open .concept-toggle { transform:rotate(180deg); }
+  .concept-body { display:none; padding:0 1.3rem 1.3rem; border-top:1px solid var(--border); }
+  .concept-card.open .concept-body { display:block; }
+  .concept-desc { font-size:.875rem; line-height:1.85; color:#3a3530; margin:.9rem 0 1rem; }
+  .concept-desc strong { color:var(--ink); }
+  .concept-desc code { background:#f0ece3; padding:.1rem .4rem; border-radius:2px; font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+  .key-points { margin:.5rem 0 1rem; list-style:none; }
+  .key-points li { font-size:.855rem; color:#3a3530; margin-bottom:.38rem; display:flex; gap:.5rem; align-items:flex-start; }
+  .key-points li::before { content:'›'; color:var(--gold); font-weight:700; flex-shrink:0; margin-top:.08rem; }
+  .refs-title { font-family:'JetBrains Mono',monospace; font-size:.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:.9rem 0 .5rem; border-top:1px dashed var(--border); padding-top:.9rem; }
+  .ref-list { display:flex; flex-direction:column; gap:.4rem; }
+  .ref-item { display:flex; align-items:flex-start; gap:.5rem; font-size:.825rem; }
+  .ref-badge { font-family:'JetBrains Mono',monospace; font-size:.65rem; padding:.1rem .35rem; border-radius:2px; flex-shrink:0; margin-top:.12rem; font-weight:600; white-space:nowrap; }
+  .badge-cn { background:#e8f0fb; color:#1a5fa3; }
+  .badge-en { background:#fdf3e3; color:#8a5a0b; }
+  .badge-gh { background:#e8f5e9; color:#2e7d32; }
+  .badge-book { background:#f3e8fb; color:#6a1b9a; }
+  .ref-item a { color:var(--link-color); text-decoration:none; line-height:1.45; }
+  .ref-item a:hover { text-decoration:underline; }
+
+  /* Chat */
+  .sticky-chat { position:sticky; top:4rem; }
+  .chat-panel { background:#fff; border:1px solid var(--border); border-radius:4px; box-shadow:0 2px 20px rgba(0,0,0,.07); display:flex; flex-direction:column; height:680px; overflow:hidden; }
+  .chat-header { background:var(--accent2); color:#fff; padding:.9rem 1.2rem; display:flex; align-items:center; gap:.7rem; flex-shrink:0; }
+  .chat-avatar { width:34px; height:34px; background:rgba(255,255,255,.15); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+  .chat-title { font-size:.9rem; font-weight:500; }
+  .chat-status { font-size:.72rem; color:rgba(255,255,255,.55); }
+  .chat-messages { flex:1; overflow-y:auto; padding:1.2rem; display:flex; flex-direction:column; gap:.9rem; }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .msg { display:flex; flex-direction:column; max-width:85%; gap:.2rem; }
+  .msg.user { align-self:flex-end; align-items:flex-end; }
+  .msg.ai { align-self:flex-start; align-items:flex-start; }
+  .bubble { padding:.65rem .9rem; border-radius:3px; font-size:.875rem; line-height:1.65; white-space:pre-wrap; word-break:break-word; }
+  .msg.user .bubble { background:var(--user-bubble); color:#fff; border-bottom-right-radius:1px; }
+  .msg.ai .bubble { background:var(--ai-bubble); color:var(--ink); border-bottom-left-radius:1px; border:1px solid var(--border); }
+  .tts-btn { background:none; border:none; cursor:pointer; color:var(--muted); padding:.2rem; font-size:.95rem; opacity:.6; transition:opacity .15s,color .15s; line-height:1; }
+  .tts-btn:hover { opacity:1; color:var(--accent2); }
+  .tts-btn.speaking { color:var(--accent); opacity:1; }
+  .typing-indicator { display:flex; gap:4px; align-items:center; padding:.65rem .9rem; background:var(--ai-bubble); border:1px solid var(--border); border-radius:3px; width:fit-content; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--muted); animation:bounce 1.2s infinite; }
+  .dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+  .chat-input-area { border-top:1px solid var(--border); padding:.8rem 1rem; display:flex; gap:.6rem; flex-shrink:0; background:#faf8f4; }
+  textarea { flex:1; resize:none; border:1px solid var(--border); border-radius:3px; padding:.55rem .8rem; font-family:'Noto Sans SC',sans-serif; font-size:.875rem; line-height:1.5; background:#fff; color:var(--ink); outline:none; transition:border-color .15s; height:62px; }
+  textarea:focus { border-color:var(--accent2); }
+  textarea::placeholder { color:#aaa; }
+  .send-btn { background:var(--accent2); color:#fff; border:none; border-radius:3px; padding:0 1rem; cursor:pointer; font-size:1.1rem; transition:background .15s; flex-shrink:0; }
+  .send-btn:hover { background:#244d78; }
+  .send-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .welcome { font-size:.82rem; color:var(--muted); text-align:center; padding:.4rem .5rem; font-style:italic; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="instructor">天津财经大学统计学院教授&nbsp;&nbsp;龚凤乾</div>
+    <h1><span>OpenClaw</span> Agent 框架课程</h1>
+    <p class="subtitle">从 ChatGPT 到自主 Agent — 8 讲系统进阶 · 核心概念精讲 · 丰富参考资源</p>
+    <div class="tag-bar">
+      <span class="tag">LLM</span><span class="tag">Agent</span><span class="tag">Controller</span>
+      <span class="tag">Planner</span><span class="tag">Memory</span><span class="tag">Tool</span><span class="tag">DeepSeek</span>
+    </div>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tabs-inner">
+    <button class="nav-tab active" onclick="switchTab('syllabus',this)">📚 课程大纲</button>
+    <button class="nav-tab" onclick="switchTab('concepts',this)">🧠 核心概念 &amp; 参考资料</button>
+  </div>
+</div>
+
+<div class="main-grid">
+<div>
+
+<!-- ═══════════════ SYLLABUS ═══════════════ -->
+<div id="tab-syllabus" class="content-section active">
+  <div class="section-header">课程大纲 · 8 讲完整版</div>
+
+  <div class="lecture-card">
+    <div class="lecture-head"><div class="lec-num">第 01 讲</div><div><div class="lec-title">从 ChatGPT 到 Agent</div></div></div>
+    <div class="lecture-body">
+      <h4>核心目标</h4><ul><li>LLM ≠ Agent</li><li>为什么需要 Controller</li><li>为什么需要工具和记忆</li></ul>
+      <h4>内容结构</h4><ul><li>Chat vs Agent 区别</li><li>Agent 五模块模型：User · Controller · Planner · Executor · Memory</li><li>OpenClaw 架构总览</li></ul>
+      <h4>实战演示</h4><ul><li>用 OpenClaw 执行简单任务</li><li>展示完整推理日志</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card highlight">
+    <div class="lecture-head"><div class="lec-num">第 02 讲</div><div><div class="lec-title">Controller —— Agent 的"大脑干"</div><div class="lec-badge">差异化优势讲次</div></div></div>
+    <div class="lecture-body">
+      <h4>核心目标</h4><ul><li>谁控制循环 · 谁决定停止 · 谁处理错误</li></ul>
+      <h4>内容</h4><ul><li>执行流程时序图（step 1-2-3）</li><li>最大步数控制</li><li>失败重试机制</li><li>无限循环实验</li></ul>
+      <h4>实战</h4><ul><li>构造复杂任务，观察 Controller 如何终止</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card">
+    <div class="lecture-head"><div class="lec-num">第 03 讲</div><div><div class="lec-title">Planner —— 语义预测器</div></div></div>
+    <div class="lecture-body">
+      <h4>核心目标</h4><ul><li>LLM 是概率预测器，不是计算引擎</li><li>不保证结构一致性</li></ul>
+      <h4>实验 A：关闭工具</h4><ul><li>数学题 · 几何题 · 多步骤逻辑题</li><li>观察 LLM 的推理错误</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card">
+    <div class="lecture-head"><div class="lec-num">第 04 讲</div><div><div class="lec-title">Tool —— 结构计算引擎</div></div></div>
+    <div class="lecture-body">
+      <h4>核心目标</h4><p>结构问题必须交给结构系统。</p>
+      <h4>内容</h4><ul><li>Python Tool 接入</li><li>API 工具接入</li><li>结构计算 vs 语义推理对比</li></ul>
+      <h4>实验 B：开启工具</h4><ul><li>同样问题重新测试，对比效果</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card">
+    <div class="lecture-head"><div class="lec-num">第 05 讲</div><div><div class="lec-title">Memory —— 信息空间的稳定层</div></div></div>
+    <div class="lecture-body">
+      <h4>核心目标</h4><ul><li>JSON 状态记忆 vs 向量语义记忆</li></ul>
+      <h4>实战</h4><ul><li>无记忆模式 · 短期 JSON 记忆 · 向量数据库记忆</li><li>观察行为变化</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card gold">
+    <div class="lecture-head"><div class="lec-num">第 06 讲</div><div><div class="lec-title">语义空间 vs 物理空间</div><div class="lec-badge">哲学高光讲次</div></div></div>
+    <div class="lecture-body">
+      <h4>内容</h4><ul><li>LLM 是语义预测空间</li><li>几何是结构保持空间</li><li>纯 LLM 在空间问题上的局限</li><li>Agent 如何桥接两种空间</li></ul>
+      <h4>实验</h4><ul><li>立方体旋转对比 · 多步骤空间推理测试</li></ul>
+    </div>
+  </div>
+
+  <div class="lecture-card">
+    <div class="lecture-head"><div class="lec-num">第 07 讲</div><div><div class="lec-title">构建可观察的认知系统</div></div></div>
+    <div class="lecture-body">
+      <h4>内容</h4><ul><li>如何记录推理轨迹</li><li>如何可视化 Agent 决策</li><li>如何评估 Agent 性能</li></ul>
+      <h4>输出目标</h4><p>完成一个可调试的 Agent Demo</p>
+    </div>
+  </div>
+
+  <div class="lecture-card gold">
+    <div class="lecture-head"><div class="lec-num">第 08 讲</div><div><div class="lec-title">信息空间统一视角（高级）</div><div class="lec-badge">课程升维收官</div></div></div>
+    <div class="lecture-body">
+      <h4>内容</h4><ul><li>预测系统 vs 模拟系统</li><li>语义空间与物理空间</li><li>Agent 是"跨空间调度系统"</li><li>未来多模态 Agent 方向</li></ul>
+    </div>
+  </div>
+</div><!-- /tab-syllabus -->
+
+
+<!-- ═══════════════ CONCEPTS ═══════════════ -->
+<div id="tab-concepts" class="content-section">
+  <div class="section-header">核心概念精讲 · 参考资源（点击展开）</div>
+
+  <!-- LLM -->
+  <div class="concept-card" id="card-llm">
+    <div class="concept-header" onclick="toggleCard('card-llm')">
+      <div class="concept-icon" style="background:#dbeafe">🧬</div>
+      <div><span class="concept-title">大语言模型</span><span class="concept-abbr" style="background:#dbeafe;color:#1e40af">LLM</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>大语言模型（Large Language Model，LLM）</strong>是基于 Transformer 架构、在海量文本数据上预训练的深度神经网络。其核心机制是<strong>自回归预测</strong>——给定上下文，预测下一个 token 的概率分布。
+        <br><br>这一机制赋予了 LLM 出色的语言理解与生成能力，但也决定了其本质：<strong>LLM 是概率语言预测器，而非逻辑推理引擎或精确计算工具</strong>。理解这一点，是本课程的起点。正因 LLM 无法保证结构一致性，才需要 Agent 框架将其与 Tool、Memory、Controller 结合，补足其固有缺陷。
+      </p>
+      <ul class="key-points">
+        <li>Transformer + 自注意力机制是基础架构，GPT 系列为典型代表</li>
+        <li>训练范式：预训练（Pre-training）+ 指令微调（SFT）+ RLHF 对齐</li>
+        <li>涌现能力（Emergent Abilities）：规模超过阈值后出现的推理跃迁</li>
+        <li>上下文窗口（Context Window）是短期记忆的边界，超出则遗忘</li>
+        <li>幻觉（Hallucination）：以高置信度输出错误事实，是 Agent 框架存在的核心动因</li>
+        <li>DeepSeek、ChatGLM、Qwen 是目前主流的国产开源 LLM</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://intro-llm.github.io/" target="_blank">《大规模语言模型：从理论到实践》— 复旦大学张奇等著（免费在线教材）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://github.com/datawhalechina/happy-llm" target="_blank">Happy-LLM：从零开始的大语言模型原理与实践（Datawhale）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://github.com/datawhalechina/llm-cookbook" target="_blank">LLM-Cookbook：吴恩达大模型系列课程中文版（Datawhale）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/654041855" target="_blank">万字长文入门大语言模型（LLM）— 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-book">书籍</span><a href="https://llmbook-zh.github.io/LLMBook.pdf" target="_blank">《大语言模型》中文书（人大赵鑫团队，PDF 免费下载）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.runoob.com/ai-agent/ai-agent-tutorial.html" target="_blank">菜鸟教程：AI Agent 完整教程（含 LLM 基础概念）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://www.deeplearning.ai/short-courses/" target="_blank">DeepLearning.AI：吴恩达 LLM 系列短课（多数含中文字幕）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://github.com/karpathy/nanoGPT" target="_blank">nanoGPT — Andrej Karpathy 极简 GPT 实现（GitHub）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/ninehills/blog/issues/97" target="_blank">LLM 学习路径与资料汇总（精选必看资源列表）</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT -->
+  <div class="concept-card" id="card-agent">
+    <div class="concept-header" onclick="toggleCard('card-agent')">
+      <div class="concept-icon" style="background:#dcfce7">🤖</div>
+      <div><span class="concept-title">智能体</span><span class="concept-abbr" style="background:#dcfce7;color:#15803d">Agent</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>AI Agent（智能体）</strong>是一种以 LLM 为"大脑"，能够自主感知环境、制定计划、调用工具并持续执行直至完成目标的程序系统。与单轮问答不同，Agent 实现了从<strong>"被动应答"到"主动做事"</strong>的根本转变。
+        <br><br>核心公式：<code>Agent = LLM（大脑）+ Planning（规划）+ Tool Use（工具）+ Memory（记忆）</code>
+        <br><br>在 OpenClaw 框架中，Agent 的行为由 Controller 统筹调度，Planner 负责推理分解，Executor 调用 Tool，Memory 管理状态信息——五模块协同，构成完整的自主执行系统。
+      </p>
+      <ul class="key-points">
+        <li>核心特征：自主性（Autonomy）、目标导向、多步执行、环境交互</li>
+        <li>ReAct 范式：Reasoning（推理）+ Acting（行动）交错进行，是主流 Agent 推理框架</li>
+        <li>吴恩达 4 大设计模式：Reflection · Tool Use · Planning · Multi-Agent 协作</li>
+        <li>Agent ≠ RPA：Agent 具备语义理解和动态推理，而非固定流程脚本</li>
+        <li>幻觉控制、错误重试、循环终止是工程实现的核心挑战</li>
+        <li>2025 年被称为"Agent 元年"，多智能体协作（Multi-Agent）是前沿方向</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/699307654" target="_blank">吴恩达：AI Agent 4 种最常见的设计模式（知乎中文详解）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/17214623012" target="_blank">Google 智能体白皮书（2024）中文精译 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/657937696" target="_blank">读懂 AI Agent：基于大模型的智能体详解 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://aibook.ren/archives/ai-agent" target="_blank">一文看懂什么是智能体（AI Agent）— AI 全书</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/1919046969076195976" target="_blank">深入浅出：AI Agent 核心基础知识全解析 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/datawhalechina/hello-agents" target="_blank">Hello-Agents：从零构建智能体（Datawhale，2025 最新）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.runoob.com/ai-agent/ai-agent-tutorial.html" target="_blank">菜鸟教程：AI Agent 完整教程（含 Python 代码实例）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://lilianweng.github.io/posts/2023-06-23-agent/" target="_blank">LLM Powered Autonomous Agents — Lilian Weng（OpenAI 博客）</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLLER -->
+  <div class="concept-card" id="card-controller">
+    <div class="concept-header" onclick="toggleCard('card-controller')">
+      <div class="concept-icon" style="background:#fee2e2">🎛️</div>
+      <div><span class="concept-title">控制器</span><span class="concept-abbr" style="background:#fee2e2;color:#b91c1c">Controller</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>Controller（控制器）</strong>是 Agent 框架中最容易被忽视、却最关键的模块——它是整个执行循环的<strong>"大脑干"</strong>，负责协调所有其他模块。Controller 决定：何时启动新推理步骤、何时调用工具、何时终止循环，以及发生错误时如何重试或降级处理。
+        <br><br>没有 Controller，LLM 可能陷入无限循环、资源耗尽，或在错误路径上无法自救。这是本课程的<strong>差异化优势讲次</strong>：大多数 Agent 教程只讲 Planner 和 Tool，忽视了 Controller 才是工程稳定性的核心保障。
+      </p>
+      <ul class="key-points">
+        <li>执行循环：step → observe → plan → act → repeat（直到终止条件触发）</li>
+        <li>终止条件：最大步数限制 · 目标完成检测 · 异常捕获</li>
+        <li>重试机制（Retry）：对 LLM 输出格式错误、Tool 调用失败的容错处理</li>
+        <li>无限循环防护：防止 Agent 在无解任务上永久运行，消耗 API Token</li>
+        <li>类比：操作系统的进程调度器；人脑前额叶皮层的执行功能</li>
+        <li>LangGraph 是目前最主流的基于状态机的 Controller 实现框架</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/699307654" target="_blank">吴恩达 Agent 设计模式：规划与多智能体协作（含循环控制讲解）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://blog.csdn.net/qq_35812205/article/details/143748967" target="_blank">LLM Agent 设计与开源框架汇总（含 Controller 架构详解）— CSDN</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/1919046969076195976" target="_blank">AI Agent 核心组件深度解析：Function Calling 与控制流 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/datawhalechina/hello-agents" target="_blank">Hello-Agents：Agent 执行循环与控制逻辑实现（Datawhale）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank">Building Effective Agents — Anthropic 工程经验白皮书</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/langchain-ai/langgraph" target="_blank">LangGraph：基于图状态机的 Agent 控制流框架（GitHub）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.cnblogs.com/lusuo/p/18663007" target="_blank">Google Agent 白皮书中文版：编排层与控制逻辑 — 博客园</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANNER -->
+  <div class="concept-card" id="card-planner">
+    <div class="concept-header" onclick="toggleCard('card-planner')">
+      <div class="concept-icon" style="background:#fef3c7">🗺️</div>
+      <div><span class="concept-title">规划器</span><span class="concept-abbr" style="background:#fef3c7;color:#92400e">Planner</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>Planner（规划器）</strong>是 Agent 中负责"思考"的模块，其底层就是 LLM 本身。它接收当前任务和上下文，输出下一步行动计划。主流方法包括<strong>思维链（CoT）</strong>、<strong>ReAct</strong>（推理+行动交错）和<strong>思维树（ToT）</strong>。
+        <br><br>课程核心洞见：<strong>Planner 是语义预测系统，不是精确计算系统</strong>。它擅长语义分解与自然语言推理，但面对精确数学、空间几何、结构约束问题时往往失败——这正是 Tool 不可缺少的原因，也是第 3、4 讲实验的核心内容。
+      </p>
+      <ul class="key-points">
+        <li>Chain-of-Thought（CoT）：引导 LLM 输出中间推理步骤，显著提升复杂任务表现</li>
+        <li>Zero-shot CoT：追加"让我们一步步思考"即可激活推理能力，无需样本</li>
+        <li>ReAct：Thought → Action → Observation 循环，将推理与环境交互融合</li>
+        <li>Tree-of-Thoughts（ToT）：多路径规划，通过评估选择最优推理树</li>
+        <li>任务分解（Task Decomposition）：将复杂目标拆解为可执行子任务序列</li>
+        <li>规划失败点：空间推理、精确计数、多步约束——详见第 6 讲语义空间 vs 物理空间</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/718959013" target="_blank">Agent 技术解读：Planning 规划模块详解（CoT / ReAct / ToT）— 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/629087587" target="_blank">大模型思维链（Chain-of-Thought）技术原理详解 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/622213602" target="_blank">如何更好地理解思维链 Chain of Thought — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://developer.aliyun.com/article/1684023" target="_blank">Chain-of-Thought 推理步骤拆解详解 — 阿里云开发者社区</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://www.promptingguide.ai/techniques/react" target="_blank">ReAct Prompting 完整指南 — Prompt Engineering Guide</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://arxiv.org/abs/2201.11903" target="_blank">Chain-of-Thought Prompting 原始论文（Wei et al., 2022，arXiv）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://arxiv.org/abs/2210.03629" target="_blank">ReAct 原始论文（Yao et al., 2022，arXiv）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://arxiv.org/abs/2305.10601" target="_blank">Tree of Thoughts 原始论文（Yao et al., 2023，arXiv）</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY -->
+  <div class="concept-card" id="card-memory">
+    <div class="concept-header" onclick="toggleCard('card-memory')">
+      <div class="concept-icon" style="background:#ede9fe">🗄️</div>
+      <div><span class="concept-title">记忆系统</span><span class="concept-abbr" style="background:#ede9fe;color:#6d28d9">Memory</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>Memory（记忆）</strong>是 Agent 的信息存储与检索层。LLM 本身没有持久记忆——每次调用独立、上下文有限。Memory 模块弥补了这一缺陷，使 Agent 能够跨步骤、跨会话地保持状态一致性。
+        <br><br>OpenClaw 课程将 Memory 分为两类：<strong>JSON 状态记忆</strong>（结构化、精确，适合任务状态跟踪）和<strong>向量语义记忆</strong>（通过 RAG 检索相关上下文，适合知识库问答）。两者有本质区别，不可混淆——这是第 5 讲的核心实验内容。
+      </p>
+      <ul class="key-points">
+        <li>短期记忆（Short-term）：上下文窗口内的对话历史，会话结束即消失</li>
+        <li>长期记忆（Long-term）：向量数据库 + 语义检索，支持跨会话知识持久化</li>
+        <li>情景记忆（Episodic）：存储 Agent 历史行为序列，支持反思与改进</li>
+        <li>程序性记忆（Procedural）：System Prompt、工具定义、行为规则</li>
+        <li>RAG（检索增强生成）：将外部知识库与 LLM 生成能力结合的主流实践</li>
+        <li>向量嵌入（Embedding）：文本映射为高维向量，支持语义相似度检索（FAISS/Chroma）</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="http://qiankunli.github.io/2024/11/20/llm_memory.html" target="_blank">上下文记忆：AI Agent Native 的任务存储机制 — 李乾坤技术博客</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://blog.csdn.net/Python_cocola/article/details/147062464" target="_blank">盘点 6 个开源 AI Memory 项目，RAG ≠ 记忆 — CSDN</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.cnblogs.com/theseventhson/p/18261594" target="_blank">LangChain + RAG 向量数据库实现与评估方案 — 博客园</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.cnblogs.com/charlieroro/p/18065400" target="_blank">向量数据库与 LLM 集成实践指南 — 博客园</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://luxiangdong.com/2024/04/28/agents2/" target="_blank">AI Agents Are All You Need：Memory 与 RAG 深度解析（中译）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/IAAR-Shanghai/Awesome-AI-Memory" target="_blank">Awesome-AI-Memory：AI 记忆知识库（论文/框架/基准全收录）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://blog.csdn.net/uuzeray/article/details/144177807" target="_blank">LangChain + RAG 大模型学习笔记（完整流程）— CSDN</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/mem0ai/mem0" target="_blank">Mem0：智能记忆层，为 AI Agent 提供持久化记忆（开源）</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOL -->
+  <div class="concept-card" id="card-tool">
+    <div class="concept-header" onclick="toggleCard('card-tool')">
+      <div class="concept-icon" style="background:#fce7f3">🔧</div>
+      <div><span class="concept-title">工具系统</span><span class="concept-abbr" style="background:#fce7f3;color:#9d174d">Tool</span></div>
+      <span class="concept-toggle">▼</span>
+    </div>
+    <div class="concept-body">
+      <p class="concept-desc">
+        <strong>Tool（工具）</strong>是 Agent 通向外部结构系统的"手"。当 Planner（LLM）面对精确计算、数据库查询、代码执行、API 调用等结构性任务时，必须将控制权交给对应工具——这是本课程的核心工程洞见。
+        <br><br>工具系统的现代标准是 <strong>Function Calling</strong>：LLM 以结构化 JSON 格式输出工具名称和参数，由 Controller 调度执行，结果返回 LLM 继续推理。2024 年 Anthropic 发布的 <strong>MCP（Model Context Protocol）</strong>进一步标准化了 Agent 与工具之间的接口协议，是当前最重要的行业标准之一。
+      </p>
+      <ul class="key-points">
+        <li>Python Tool：代码执行能力，解决精确计算、数据处理、算法问题</li>
+        <li>API Tool：调用外部服务，如天气、搜索引擎、数据库、支付接口</li>
+        <li>Function Calling：LLM 输出结构化调用描述，由框架执行并返回结果</li>
+        <li>MCP（Model Context Protocol）：Anthropic 2024 年提出的 Agent-Tool 标准接口协议</li>
+        <li>工具描述（Tool Description）的质量直接决定 LLM 能否正确选择和调用工具</li>
+        <li>核心原则：结构计算引擎做精确的，LLM 做语义模糊的，各司其职</li>
+      </ul>
+      <div class="refs-title">📌 推荐参考资料</div>
+      <div class="ref-list">
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/1919046969076195976" target="_blank">AI Agent Function Calling 原理与实现：让 LLM 调用工具 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://blog.csdn.net/m0_56255097/article/details/142990242" target="_blank">一文彻底搞懂 LLM Agent：Agent + RAG + Tool 完整解析 — CSDN</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://www.runoob.com/ai-agent/ai-agent-tutorial.html" target="_blank">菜鸟教程：AI Agent 工具调用模块（含 Python 代码示例）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://blog.csdn.net/2401_85373691/article/details/147383699" target="_blank">AI 大模型必学：LLM / Agent / RAG / 向量数据库 / Tool 全面对比 — CSDN</a></div>
+        <div class="ref-item"><span class="ref-badge badge-cn">中文</span><a href="https://zhuanlan.zhihu.com/p/17214623012" target="_blank">Google Agent 白皮书：Tools 与 Extensions 章节深度解读 — 知乎</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://www.anthropic.com/news/model-context-protocol" target="_blank">MCP（Model Context Protocol）官方发布公告 — Anthropic</a></div>
+        <div class="ref-item"><span class="ref-badge badge-gh">GitHub</span><a href="https://github.com/modelcontextprotocol/servers" target="_blank">MCP Servers：官方 MCP 工具服务器示例集合（GitHub）</a></div>
+        <div class="ref-item"><span class="ref-badge badge-en">英文</span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">OpenAI Function Calling 官方文档（工具调用标准参考）</a></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-concepts -->
+
+</div><!-- /left -->
+
+<!-- ── AI Assistant ── -->
+<div class="sticky-chat">
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <div class="chat-title">OpenClaw 课程助手</div>
+        <div class="chat-status">由 DeepSeek 驱动 · 随时提问</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="welcome">有关课程的任何问题，欢迎直接提问</div>
+      <div class="msg ai">
+        <div class="bubble">您好！我是 OpenClaw 课程的 AI 助手。
+
+课程共 8 讲，涵盖 LLM、Agent、Controller、Planner、Memory 和 Tool 等核心概念。
+
+点击上方"核心概念"标签，可查看每个概念的详细讲解与参考资料。有任何疑问，请随时提问！</div>
+        <button class="tts-btn" onclick="toggleTTS(this)" title="朗读">🔊</button>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="userInput" placeholder="输入问题，按 Enter 发送…" rows="2"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送">➤</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main-grid -->
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+let currentUtterance = null, currentSpeakingBtn = null;
+
+function cleanTextForTTS(text) {
+  text = text.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FAFF}]/gu, '');
+  text = text.replace(/[，。！？；：、""''「」【】〔〕《》〈〉——…·\.,!?;:\-–—"'()\[\]{}<>\/\\|@#$%^&*~`+=#]/g, ' ');
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function toggleTTS(btn) {
+  if (btn === currentSpeakingBtn && currentUtterance) {
+    window.speechSynthesis.cancel();
+    currentUtterance = null; currentSpeakingBtn = null;
+    btn.classList.remove('speaking'); return;
+  }
+  if (currentUtterance) {
+    window.speechSynthesis.cancel();
+    if (currentSpeakingBtn) currentSpeakingBtn.classList.remove('speaking');
+  }
+  const text = cleanTextForTTS(btn.previousElementSibling?.innerText || '');
+  if (!text) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN'; utter.rate = 1.0;
+  utter.onend = utter.onerror = () => {
+    btn.classList.remove('speaking'); currentUtterance = null; currentSpeakingBtn = null;
+  };
+  currentUtterance = utter; currentSpeakingBtn = btn;
+  btn.classList.add('speaking');
+  window.speechSynthesis.speak(utter);
+}
+
+const messagesEl = document.getElementById('chatMessages');
+const inputEl = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const history = [];
+
+function appendMessage(role, text) {
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  msg.appendChild(bubble);
+  if (role === 'ai') {
+    const ttsBtn = document.createElement('button');
+    ttsBtn.className = 'tts-btn'; ttsBtn.title = '朗读'; ttsBtn.textContent = '🔊';
+    ttsBtn.onclick = function() { toggleTTS(this); };
+    msg.appendChild(ttsBtn);
+  }
+  messagesEl.appendChild(msg);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'msg ai'; el.id = 'typing';
+  el.innerHTML = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = ''; sendBtn.disabled = true;
+  appendMessage('user', text);
+  history.push({ role: 'user', content: text });
+  showTyping();
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history }),
+    });
+    const data = await res.json();
+    const reply = data.reply || '抱歉，未能获取回复。';
+    removeTyping();
+    appendMessage('ai', reply);
+    history.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    removeTyping();
+    appendMessage('ai', '网络错误，请稍后重试。');
+  }
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+</script>
+</body>
+</html>

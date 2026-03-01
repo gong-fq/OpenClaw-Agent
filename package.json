@@ -1,0 +1,11 @@
+{
+  "name": "openclaw-course-site",
+  "version": "1.0.0",
+  "description": "OpenClaw Agent Framework Course — 龚凤乾教授 · 天津财经大学",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}
